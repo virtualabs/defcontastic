@@ -1,0 +1,2 @@
+whad==1.2.0
+meshtastic==2.4.0
