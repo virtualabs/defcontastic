@@ -21,7 +21,6 @@ class Meshtastic(LoRa):
     """
 
     def __init__(self, device, channel):
-        print(channel)
         self.key = channel.psk
         super().__init__(device)
         self.set_frequency(channel.freq)
@@ -103,11 +102,9 @@ class Meshtastic(LoRa):
             channel_hash=self.chan_hash,
             via_mqtt=0
         )/payload
-        frame.show()
         self.send(bytes(frame))
 
     def on_packet(self, packet):
-        packet.show()
         try:
             frame = MeshtasticHdr(bytes(packet))
             decrypted = self.decrypt_data(frame.sender_addr, frame.packet_id,
@@ -173,12 +170,10 @@ my_addr = randint(0, 0xffffff00)
 #my_addr = 0x06caff30
 print(f"my address: {my_addr:08x}")
 
-#url = "https://meshtastic.org/e/#CjISIDhLvMAdwCLRgb82uGEh4fuWty5Vv3Qifp1q-0jWTLGhGgpERUZDT05uZWN0OgIIDRIRCAEQBjgBQANIAVAeaAHABgE"
+# DEFCONtastic channel:
+# url = "https://meshtastic.org/e/#CjISIDhLvMAdwCLRgb82uGEh4fuWty5Vv3Qifp1q-0jWTLGhGgpERUZDT05uZWN0OgIIDRIRCAEQBjgBQANIAVAeaAHABgE"
 url = "https://meshtastic.org/e/#CjASIIW2KloY_VOn3wvMzw38sXX_8MTL7ewRiGDu0d6kE4vAGgZGcmFuY2UoATABOgASEQgBEAYYBTgDQANIAVAbwAYB"
 channel_config = MeshChannelConfiguration.parse_url(url)
-print(channel_config)
-#config = get_lora_config(channel_settings)
-#print(config)
 
 # Configure our LoRa transceiver
 #freq, cr, sf, bw, enc_key, chan_hash = config
