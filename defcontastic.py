@@ -28,9 +28,9 @@ class Meshtastic(LoRa):
         self.cr = channel.cr
         self.bw = channel.bw
         self.chan_hash = channel.hash
-        self.preamble_length = 16
+        self.preamble_length = 8
         self.syncword = b"\xb4\x24"
-        self.enable_crc = True
+        self.enable_crc(True)
         self.enable_explicit_mode(True)
         self.invert_iq = False
         self.packets_id = {}
