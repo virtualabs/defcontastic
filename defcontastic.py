@@ -21,6 +21,7 @@ class Meshtastic(LoRa):
     """
 
     def __init__(self, device, channel):
+        print(channel)
         self.key = channel.psk
         super().__init__(device)
         self.set_frequency(channel.freq)
@@ -99,12 +100,14 @@ class Meshtastic(LoRa):
             packet_id=packet_id,
             hop_start=3,
             hop_limit=3,
-            channel_hash=self.chan_hash
+            channel_hash=self.chan_hash,
+            via_mqtt=0
         )/payload
-        
+        frame.show()
         self.send(bytes(frame))
 
     def on_packet(self, packet):
+        packet.show()
         try:
             frame = MeshtasticHdr(bytes(packet))
             decrypted = self.decrypt_data(frame.sender_addr, frame.packet_id,
@@ -114,6 +117,7 @@ class Meshtastic(LoRa):
             if data.portnum == PortNum.TEXT_MESSAGE_APP:
                 if not self.has_seen_packet(frame.packet_id):
                     self.add_packet(frame.packet_id)
+
                     # Solve user name from address
                     sender_name = self.find_user(frame.sender_addr)
                     dest_name = self.find_user(frame.dest_addr)
@@ -125,12 +129,15 @@ class Meshtastic(LoRa):
                             dest_name,
                             data.payload
                         )
+                    sleep(.5)
+                    self.send(bytes(frame))
             elif data.portnum == PortNum.NODEINFO_APP:
                 # Process node info
                 node = User()
                 node.ParseFromString(data.payload)
                 self.register_user(node)
-        except Exception:
+        except Exception as e:
+            print(e)
             pass
 
 class MeshtasticMonitor:
@@ -140,7 +147,7 @@ class MeshtasticMonitor:
     def __init__(self):
         self.__lock = Lock()
         sys.stdout.write('> ')
-        
+
 
     def show_message(self, sender_addr, sender_nick, dest_addr, dest_nick, payload):
         self.__lock.acquire()
@@ -163,9 +170,11 @@ class MeshtasticMonitor:
 
 # pick a random ID
 my_addr = randint(0, 0xffffff00)
+#my_addr = 0x06caff30
 print(f"my address: {my_addr:08x}")
 
-url = "https://meshtastic.org/e/#CjISIDhLvMAdwCLRgb82uGEh4fuWty5Vv3Qifp1q-0jWTLGhGgpERUZDT05uZWN0OgIIDRIRCAEQBjgBQANIAVAeaAHABgE"
+#url = "https://meshtastic.org/e/#CjISIDhLvMAdwCLRgb82uGEh4fuWty5Vv3Qifp1q-0jWTLGhGgpERUZDT05uZWN0OgIIDRIRCAEQBjgBQANIAVAeaAHABgE"
+url = "https://meshtastic.org/e/#CjASIIW2KloY_VOn3wvMzw38sXX_8MTL7ewRiGDu0d6kE4vAGgZGcmFuY2UoATABOgASEQgBEAYYBTgDQANIAVAbwAYB"
 channel_config = MeshChannelConfiguration.parse_url(url)
 print(channel_config)
 #config = get_lora_config(channel_settings)

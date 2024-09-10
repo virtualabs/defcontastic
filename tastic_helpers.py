@@ -45,6 +45,7 @@ class RegionEU868:
     freq_switching = False
     wide_lora = False
 
+
 def hash(channel):
     """Meshtastic channel name hashing algorithm
 
@@ -84,45 +85,39 @@ class MeshChannelConfiguration:
         config_pb2.Config.LoRaConfig.ModemPreset.SHORT_FAST: {
             'bw': (812.5, 250),
             'cr': 45,
-            'sf': 7,
-            'name': "ShortFast"
+            'sf': 7
         },
         config_pb2.Config.LoRaConfig.ModemPreset.SHORT_SLOW: {
             'bw': (812.5, 250),
             'cr': 45,
-            'sf': 8,
-            'name': "ShortSlow"  
+            'sf': 8             
         },
         config_pb2.Config.LoRaConfig.ModemPreset.MEDIUM_FAST: {
             'bw': (812.5, 250),
             'cr': 45,
-            'sf': 9,
-            'name': "MediumFast"        
+            'sf': 9          
         },
         config_pb2.Config.LoRaConfig.ModemPreset.MEDIUM_SLOW: {
             'bw': (812.5, 250),
             'cr': 45,
-            'sf': 10,
-            'name': "MediumSlow"            
+            'sf': 10            
         },
         config_pb2.Config.LoRaConfig.ModemPreset.LONG_MODERATE: {
             'bw': (406.25, 125),
             'cr': 48,
-            'sf': 11,
-            'name': "LongModerate"           
+            'sf': 11            
         },
         config_pb2.Config.LoRaConfig.ModemPreset.LONG_SLOW: {
             'bw': (406.25, 125),
             'cr': 48,
-            'sf': 12,
-            'name': "LongSlow"           
+            'sf': 12            
         },
         config_pb2.Config.LoRaConfig.ModemPreset.VERY_LONG_SLOW: {
             'bw': (203.125, 62.5),
             'cr': 48,
-            'sf': 12,
-            'name': 'VeryLongSlow'           
+            'sf': 12              
         }
+
     }
 
 
@@ -135,7 +130,6 @@ class MeshChannelConfiguration:
         self.bw = 250000
         self.psk = b""
         self.hash = 0
-        self.channel = 0
 
     def __str__(self):
         """Meshtastic channel configuration representation
@@ -147,50 +141,6 @@ class MeshChannelConfiguration:
         """Meshtastic channel configuration
         """
         return str(self)
-
-    @staticmethod
-    def presets(region):
-        """Enumerate all possible configurations (presets) for a given region
-        """
-        for preset, lora_cfg in MeshChannelConfiguration.PRESETS.items():
-
-            # Compute channels
-            bw = lora_cfg['bw'][0] if region.wide_lora else lora_cfg['bw'][1]
-            cr = lora_cfg['cr']
-            sf = lora_cfg['sf']
-
-            # Adjust bandwidth
-            if bw == 31:
-                bw = 31.25
-            if bw == 62:
-                bw = 62.5
-            if bw == 200:
-                bw = 203.125
-            if bw == 400:
-                bw = 406.25
-            if bw == 800:
-                bw = 812.5
-            if bw == 1600:
-                bw = 1625.0
-
-            # Compute channel frequency based on channel name
-            num_channels = floor((region.freq_end - region.freq_start) / (region.spacing + (bw / 1000)))
-            for channel in range(num_channels):
-                freq = region.freq_start + (bw / 2000) + (channel * (bw / 1000))
-
-                # Generate channel config
-                channel_config = MeshChannelConfiguration()
-                channel_config.freq = int(freq*1000000)
-                channel_config.cr = cr
-                channel_config.sf = sf
-                channel_config.bw = bw*1000
-                channel_config.psk = b''
-                channel_config.hash = 0
-                channel_config.channel = channel
-                channel_config.preset = lora_cfg['name']
-
-                yield channel_config
-
 
     @staticmethod
     def parse_url(url) -> apponly_pb2.ChannelSet:
@@ -211,7 +161,8 @@ class MeshChannelConfiguration:
         decodedURL = base64.urlsafe_b64decode(b64)
         channel = apponly_pb2.ChannelSet()
         channel.ParseFromString(decodedURL)
-        
+        print(channel)
+
         # Deduce LoRa configuration from channel settings
         bw = 250
         cr = 45
@@ -228,7 +179,7 @@ class MeshChannelConfiguration:
             }
 
         # Determine bandwidth based on region
-        region = RegionUS
+        region = RegionEU868
 
         bw = lora_cfg['bw'][0] if region.wide_lora else lora_cfg['bw'][1]
         cr = lora_cfg['cr']
@@ -248,12 +199,16 @@ class MeshChannelConfiguration:
         if bw == 1600:
             bw = 1625.0
 
+        if (region.freq_end - region.freq_start) < (bw / 1000):
+            print('fallback')
+
         # Compute channel frequency based on channel name
         num_channels = floor((region.freq_end - region.freq_start) / (region.spacing + (bw / 1000)))
         channel_num = hash(channel.settings[0].name) % num_channels
         freq = region.freq_start + (bw / 2000) + (channel_num * (bw / 1000))
 
         # Configure channel
+        print(channel.settings[0].name.encode("utf-8"))
         channel_config = MeshChannelConfiguration()
         channel_config.freq = int(freq*1000000)
         channel_config.cr = cr
